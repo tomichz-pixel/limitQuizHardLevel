@@ -138,6 +138,7 @@ window.MathJax = {
     opacity:0;
     transform:scale(0);
     transition:0.25s;
+    pointer-events: none; /* マッチ済みカードをクリック不可に */
 }
 
 /* モーダルの表示位置とスクロール対応 */
@@ -147,10 +148,10 @@ window.MathJax = {
     top:0; left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.5); /* うっすら透けるように0.5に変更 */
+    background:rgba(0,0,0,0.5);
     justify-content:center;
     align-items:flex-start; 
-    padding-top: 105px; /* 上部カード列の上端に合わせる */
+    padding-top: 105px;
     z-index: 10;
 }
 
@@ -161,20 +162,20 @@ window.MathJax = {
     width:90%;
     max-width:420px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    max-height: calc(100vh - 120px); /* 画面外へのはみ出し防止 */
+    max-height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
 }
 
 #math-game #txt {
-    overflow-y: auto; /* 文字が長い場合はスクロール */
+    overflow-y: auto;
     padding-right: 5px;
     text-align: center;
 }
 </style>
 
 <div class="header">
-    <div>極限めくり</div>
+    <div>極限・公式めくり</div>
     <div>タイム: <span id="t">0</span>秒　ミス: <span id="m">0</span></div>
 </div>
 
@@ -211,14 +212,19 @@ const limitData = [
     { id: 5, type: '指数対数極限', latexA: '\\lim_{x\\to0} \\frac{a^x-1}{x}', latexB: '\\ln a', note: '関数 \\(f(x)=a^x\\) の \\(x=0\\) における微分係数です。導関数は \\(f\'(x) = a^x \\ln a\\) となるため、\\(x=0\\) を代入して \\(a^0 \\ln a = \\ln a\\) を得ます。' },
     { id: 6, type: 'ネイピア数', latexA: '\\lim_{n\\to\\infty} \\left(1+\\frac{a}{n}\\right)^n', latexB: 'e^a', note: '\\(t=\\frac{n}{a}\\) と置換すると、\\(\\lim_{t\\to\\infty} \\left( (1+\\frac{1}{t})^t \\right)^a\\) となります。内側が \\(e\\) に収束するため \\(e^a\\) です。複利計算の極限でもあります。' },
     { id: 7, type: 'ネイピア数', latexA: '\\lim_{x\\to0} (1+x)^{1/x}', latexB: 'e', note: 'ネイピア数 \\(e\\) の定義式（連続変数バージョン）です。\\(1\\) にほんの少し足したものを、無限回掛けるイメージです。' },
-    { id: 8, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\sin x - x}{x^3}', latexB: '-\\frac{1}{6}', note: '\\(\\sin x \\approx x - \\frac{x^3}{3!} + \\frac{x^5}{5!} \\cdots\\) と展開できます。分子の \\(x\\) が相殺され、残った \\(-\\frac{x^3}{6}\\) を分母の \\(x^3\\) で割るため \\(-\\frac{1}{6}\\) になります。' },
-    { id: 9, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{e^x - 1 - x}{x^2}', latexB: '\\frac{1}{2}', note: '\\(e^x \\approx 1 + x + \\frac{x^2}{2!} + \\cdots\\) と展開できます。分子の \\(1+x\\) が相殺されて \\(\\frac{x^2}{2}\\) が残り、分母の \\(x^2\\) で割るため \\(\\frac{1}{2}\\) となります。' },
-    { id: 10, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\ln(1+x) - x}{x^2}', latexB: '-\\frac{1}{2}', note: '\\(\\ln(1+x) \\approx x - \\frac{x^2}{2} + \\frac{x^3}{3} \\cdots\\) と展開されます。分子の \\(x\\) が相殺され、残った \\(-\\frac{x^2}{2}\\) を分母の \\(x^2\\) で割るため \\(-\\frac{1}{2}\\) です。' },
-    { id: 11, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\tan x - x}{x^3}', latexB: '\\frac{1}{3}', note: '\\(\\tan x \\approx x + \\frac{x^3}{3} + \\frac{2x^5}{15} \\cdots\\) より、分子の \\(x\\) が消えて \\(\\frac{x^3}{3}\\) が残ります。分母の \\(x^3\\) で割るため \\(\\frac{1}{3}\\) になります。' },
+    
+    // --- 以下、テイラー応用問題の解説をアップデート ---
+    { id: 8, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\sin x - x}{x^3}', latexB: '-\\frac{1}{6}', note: '\\(\\sin x \\approx x - \\frac{x^3}{3!} \\cdots\\) の展開から一瞬で導けます。<br><br><span style="color:#e65100; font-size:0.9em;">※展開を使わない場合：ロピタルの定理を1回使い、\\(\\frac{\\cos x - 1}{3x^2}\\) を作ってから基本極限に帰着させて頑張ります（定数 \\(-\\frac{1}{3}\\) の落とし穴に注意！）。</span>' },
+    { id: 9, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{e^x - 1 - x}{x^2}', latexB: '\\frac{1}{2}', note: '\\(e^x \\approx 1 + x + \\frac{x^2}{2!} \\cdots\\) の展開より分子に \\(\\frac{x^2}{2}\\) が残ります。<br><br><span style="color:#e65100; font-size:0.9em;">※展開を使わない場合：1回ロピタルをして \\(\\frac{e^x-1}{2x}\\) を作り、基本極限 \\(\\lim \\frac{e^x-1}{x} = 1\\) に持ち込んで頑張ります。</span>' },
+    { id: 10, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\ln(1+x) - x}{x^2}', latexB: '-\\frac{1}{2}', note: '\\(\\ln(1+x) \\approx x - \\frac{x^2}{2} \\cdots\\) の展開より導けます。<br><br><span style="color:#e65100; font-size:0.9em;">※展開を使わない場合：1回ロピタルをして分子を \\(\\frac{1}{1+x}-1\\) とし、通分して \\(\\frac{-x}{2x(1+x)}\\) まで式変形して力技で突破します。</span>' },
+    { id: 11, type: 'テイラー応用', latexA: '\\lim_{x\\to0} \\frac{\\tan x - x}{x^3}', latexB: '\\frac{1}{3}', note: '\\(\\tan x \\approx x + \\frac{x^3}{3} \\cdots\\) より分子に \\(\\frac{x^3}{3}\\) が残ります。<br><br><span style="color:#e65100; font-size:0.9em;">※展開を使わない場合：1回ロピタルをした後、\\(\\frac{1-\\cos^2 x}{3x^2 \\cos^2 x}\\) と通分し、\\(\\left(\\frac{\\sin x}{x}\\right)^2\\) を無理やり作り出して切り抜けます。</span>' },
+    // --------------------------------------------------
+    
     { id: 12, type: 'オーダー比較', latexA: '\\lim_{n\\to\\infty} \\sqrt[n]{n}', latexB: '1', note: '\\(y=n^{1/n}\\) として自然対数をとると \\(\\ln y = \\frac{\\ln n}{n}\\)。多項式 \\(n\\) は対数 \\(\\ln n\\) より発散が速いため右辺は \\(0\\) に収束し、\\(y \\to e^0 = 1\\) となります。' },
     { id: 13, type: 'オーダー比較', latexA: '\\lim_{n\\to\\infty} \\frac{n}{2^n}', latexB: '0', note: '指数関数 \\(2^n\\) の増加スピードは、多項式 \\(n\\) の増加スピードを圧倒します。分母が圧倒的に大きくなるため、極限は \\(0\\) に収束します。' }
 ];
 
+  
 let topSel=null, botSel=null, lock=false, modalOpen=false;
 let miss=0, match=0, start=null, timer;
 let currentPairCount = 6;
@@ -264,6 +270,9 @@ function card(d, type){
 
     c.onclick=()=>{
         if(lock||modalOpen) return;
+        
+        // すでに正解済みのカードは無反応にする
+        if(c.classList.contains('matched')) return;
 
         if(!start){
             start=Date.now();
@@ -271,6 +280,19 @@ function card(d, type){
                 document.getElementById('t').textContent = Math.floor((Date.now()-start)/1000);
             },250);
         }
+
+        // --- 追加機能：すでに開いているカードをもう一度タップしたら閉じる ---
+        if (type === 'formula' && topSel && topSel.c === c) {
+            c.classList.remove('flipped');
+            topSel = null;
+            return;
+        }
+        if (type === 'value' && botSel && botSel.c === c) {
+            c.classList.remove('flipped');
+            botSel = null;
+            return;
+        }
+        // -------------------------------------------------------------------
 
         c.classList.add('flipped');
 
@@ -305,17 +327,12 @@ function card(d, type){
                     miss++;
                     document.getElementById('m').textContent=miss;
 
+                    // 誤答時も、選んだ上のカード(topSel)の「正しい式・値・解説」を表示する
                     show(
                         'ちがうよ',
-                        `<div style="font-size:0.95em; text-align:left; line-height:1.8;">`+
-                        `❌ <b>あなたの選択</b><br>`+
-                        `式: \\( \\displaystyle ${topSel.d.latexA} \\)<br>`+
-                        `値: \\( \\displaystyle ${botSel.d.latexB} \\)<br>`+
-                        `<hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">`+
-                        `⭕ <b>正しい組み合わせ</b><br>`+
-                        `\\( \\displaystyle ${topSel.d.latexA} = ${topSel.d.latexB} \\)<br>`+
-                        `\\( \\displaystyle ${botSel.d.latexA} = ${botSel.d.latexB} \\)`+
-                        `</div>`,
+                        `<div style="font-size:1.2em; margin:15px 0;">\\( \\displaystyle ${topSel.d.latexA} = ${topSel.d.latexB} \\)</div>`+
+                        `<div style="font-size:0.95em; text-align:left; background:#f4f4f4; padding:15px; border-radius:6px; line-height:1.6;">`+
+                        `<b>【解説: ${topSel.d.type}】</b><br>${topSel.d.note}</div>`,
                         ()=>{
                             topSel.c.classList.remove('flipped');
                             botSel.c.classList.remove('flipped');
@@ -323,7 +340,7 @@ function card(d, type){
                         }
                     );
                 }
-            },600); // めくったカードを見る時間を少し確保
+            },600);
         }
     };
 
@@ -366,7 +383,6 @@ function init(){
         if (r.checked) currentPairCount = parseInt(r.value);
     }
 
-    // 問題リストから指定組数だけランダムに抽出
     let gameData = shuffle([...limitData]).slice(0, currentPairCount);
 
     topArea.innerHTML='';
@@ -375,7 +391,6 @@ function init(){
     shuffle([...gameData]).forEach(d=>topArea.appendChild(card(d,'formula')));
     shuffle([...gameData]).forEach(d=>bottomArea.appendChild(card(d,'value')));
 
-    // DOMに追加後、初期表示分のカード裏面の数式をレンダリング
     renderMath();
 }
 
